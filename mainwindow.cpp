@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget* parent) :
     ui->scrollArea->setWidget(label.get());
 
     // Создание меню и действий
-    //createActions();
+    createActions();
 
     // Настройка спинбокса для толщины кисти
     connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(setPenWidth(int)));
@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget* parent) :
     changed = false;        // Флаг изменений
 
     // Создание нового файла
-    //newFile();
+    newFile();
 
     // Обновление состояния кнопок инструментов
     repaintButtons();
@@ -91,22 +91,133 @@ void MainWindow::repaintButtons() {
     }
 }
 
-
 void MainWindow::mousePressEvent(QMouseEvent* event) {
+    isPressed = true;
 
+    QPoint p = QPoint(
+        ui->scrollArea->horizontalScrollBar()->value(),
+        ui->scrollArea->verticalScrollBar()->value());
+    QPoint pos = event->pos() + p;
+
+    current = ui->scrollArea->mapFrom(this, pos);
+    next = current;
+
+    repaint();
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent* event) {
+    QPoint pos = QPoint(
+        ui->scrollArea->horizontalScrollBar()->value(),
+        ui->scrollArea->verticalScrollBar()->value());
+    next = ui->scrollArea->mapFrom(this, event->pos() + pos);
 
+    ui->statusBar->showMessage(
+        (changed ? QString("* ") : QString("")) +
+        QString::number(next.x()) + QString(",") + QString::number(next.y()));
+
+    repaint();
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
+    isPressed = false;
 
+    QPoint pos = QPoint(
+        ui->scrollArea->horizontalScrollBar()->value(),
+        ui->scrollArea->verticalScrollBar()->value());
+    next = ui->scrollArea->mapFrom(this, event->pos() + pos);
+
+    switch (instrument) {
+    case 3: {
+        drawLine();
+        break;
+    }
+    case 4: {
+        drawEllipse();
+        break;
+    }
+    case 5: {
+        drawRectangle();
+        break;
+    }
+    default: {
+        break;
+    }
+    }
 }
 
 void MainWindow::paintEvent(QPaintEvent* event) {
+    Q_UNUSED(event);
 
+    if (current == next) {
+        return;
+    }
+
+    switch (instrument) {
+    case 1: {
+        if (isPressed) {
+            painter.begin(&img);
+            painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+            changed = true;
+            painter.drawLine(current, next);
+            painter.end();
+        }
+        current = next;
+        label->setPixmap(img);
+        break;
+    }
+    case 2: {
+        if (isPressed) {
+            painter.begin(&img);
+            painter.setPen(QPen(Qt::white, widthOfPen + 6, Qt::SolidLine));
+            changed = true;
+            painter.drawLine(current, next);
+            painter.end();
+        }
+        current = next;
+        label->setPixmap(img);
+        break;
+    }
+    case 3: {
+        imgTmp = img;
+        if (isPressed) {
+            painter.begin(&imgTmp);
+            painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+            if (current != next) {
+                painter.drawLine(current, next);
+            }
+            painter.end();
+            label->setPixmap(imgTmp);
+        }
+        break;
+    }
+    case 4: {
+        imgTmp = img;
+        if (isPressed) {
+            painter.begin(&imgTmp);
+            painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+            painter.drawEllipse(QRectF(current, next));
+            painter.end();
+            label->setPixmap(imgTmp);
+        }
+        break;
+    }
+    case 5: {
+        imgTmp = img;
+        if (isPressed) {
+            painter.begin(&imgTmp);
+            painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+            painter.drawRect(QRectF(current, next));
+            painter.end();
+            label->setPixmap(imgTmp);
+        }
+        break;
+    }
+    default: {
+        break;
+    }
+    }
 }
+
 
 void MainWindow::drawLine() {
 
@@ -118,6 +229,13 @@ void MainWindow::drawEllipse() {
 
 void MainWindow::drawRectangle() {
 
+}
+
+void MainWindow::newFile() {
+    if (changed) {
+        save();
+    }
+    loadFile(":/template.png");
 }
 
 void MainWindow::open() {
@@ -137,5 +255,28 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 
+void MainWindow::createActions() {
+    QMenu* fileMenu = menuBar()->addMenu(tr("&Файл"));
+
+    QAction* newAct = fileMenu->addAction(tr("&Новый файл"));
+    newAct->setShortcuts(QKeySequence::New);
+    connect(newAct, SIGNAL(triggered(bool)), SLOT(newFile()));
+
+    QAction* openAct = fileMenu->addAction(tr("&Открыть файл"));
+    openAct->setShortcuts(QKeySequence::Open);
+    connect(openAct, SIGNAL(triggered(bool)), SLOT(open()));
+
+    QAction* saveAct = fileMenu->addAction(tr("&Сохранить как"));
+    saveAct->setShortcuts(QKeySequence::Save);
+    connect(saveAct, SIGNAL(triggered(bool)), SLOT(save()));
+
+    QAction* quitAct = fileMenu->addAction(tr("&Выход"));
+    quitAct->setShortcuts(QKeySequence::Quit);
+    connect(quitAct, SIGNAL(triggered(bool)), SLOT(close()));
+}
+
 MainWindow::~MainWindow() {
 }
+
+
+

@@ -34,12 +34,10 @@ class MainWindow : public QMainWindow
     int widthOfPen;     // Текущая толщина кисти
     bool changed;       // Флаг изменений (для запроса сохранения)
 
-
     // Вспомогательные методы
     void createActions();               // Создание меню и действий
     void loadFile(const QString &fileName); // Загрузка файла
     void repaintButtons();              // Обновление состояния кнопок инструментов
-
 
 protected:
     // Обработчики событий
@@ -49,15 +47,13 @@ protected:
     void mouseReleaseEvent(QMouseEvent *ev);    // Отпускание кнопки мыши
     void closeEvent(QCloseEvent *event);        // Закрытие окна
 
-
 public:
     explicit MainWindow(QWidget *parent = 0); // Конструктор
     ~MainWindow();
 
-
 public slots:
     // Слоты для обработки действий
-    //void newFile();             // Создать новый файл
+    void newFile();             // Создать новый файл
     void open();                // Открыть файл
     bool save();                // Сохранить файл
     void pen();                 // Выбрать карандаш
@@ -71,6 +67,5 @@ public slots:
     void setColor();            // Выбрать цвет
     void setPenWidth(int width);// Установить толщину кисти
 };
-
 
 #endif // MAINWINDOW_H
