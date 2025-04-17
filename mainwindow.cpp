@@ -14,13 +14,15 @@ MainWindow::MainWindow(QWidget* parent) :
     // Создание меню и действий
     createActions();
 
-    // Настройка спинбокса для толщины кисти
+    // Настройка спинбокса для толщины кисти и ластика
     connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(setPenWidth(int)));
+    connect(ui->spinBox_2, SIGNAL(valueChanged(int)), this, SLOT(setLasticWidth(int)));
 
     // Инициализация переменных
     instrument = 1;         // По умолчанию выбран карандаш
     color.setRgb(0, 0, 0);  // Черный цвет по умолчанию
     widthOfPen = 3;         // Толщина кисти по умолчанию
+    widthOfLastic = 1;       // Толщина ластика по умолчанию
     changed = false;        // Флаг изменений
 
     // Создание нового файла
@@ -58,6 +60,10 @@ void MainWindow::rectangle() {
 
 void MainWindow::setPenWidth(int width) {
     widthOfPen = width;
+}
+
+void MainWindow::setLasticWidth(int width) {
+    widthOfLastic = width;
 }
 
 void MainWindow::setColor() {
@@ -184,7 +190,7 @@ void MainWindow::paintEvent(QPaintEvent* event) {
     case 2: {
         if (isPressed) {
             painter.begin(&img);
-            painter.setPen(QPen(Qt::white, widthOfPen + 6, Qt::SolidLine));
+            painter.setPen(QPen(Qt::white, widthOfLastic + 6, Qt::SolidLine));
             changed = true;
             painter.drawLine(current, next);
             painter.end();

@@ -32,6 +32,7 @@ class MainWindow : public QMainWindow
     QColor color;       // Текущий цвет рисования
     QPainter painter;   // Объект для рисования
     int widthOfPen;     // Текущая толщина кисти
+    int widthOfLastic;      // Текущая толщина ластика
     bool changed;       // Флаг изменений (для запроса сохранения)
 
     // Вспомогательные методы
@@ -66,6 +67,7 @@ public slots:
     void drawRectangle();       // Нарисовать прямоугольник
     void setColor();            // Выбрать цвет
     void setPenWidth(int width);// Установить толщину кисти
+    void setLasticWidth(int width);// Установить толщину ластика
 };
 
 #endif // MAINWINDOW_H
