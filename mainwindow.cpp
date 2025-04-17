@@ -8,7 +8,6 @@ MainWindow::MainWindow(QWidget* parent) :
 {
     ui->setupUi(this);
 
-
     label->setAlignment(Qt::AlignTop);
     ui->scrollArea->setWidget(label.get());
 
@@ -62,7 +61,24 @@ void MainWindow::setPenWidth(int width) {
 }
 
 void MainWindow::setColor() {
+    const QColor newColor = QColorDialog::getColor(color);
 
+    if (newColor.isValid()) {
+        color = newColor;
+
+        int r1 = (newColor.red() + 0x80) % 0x100;
+        int g1 = (newColor.green() + 0x80) % 0x100;
+        int b1 = (newColor.blue() + 0x80) % 0x100;
+        const QColor invertColor = QColor(r1, g1, b1);
+
+        ui->pushButton->setStyleSheet(
+            QString("background-color: %1; color: rgb(%2, %3, %4);")
+                .arg(newColor.name())
+                .arg(invertColor.red())
+                .arg(invertColor.green())
+                .arg(invertColor.blue()));
+    }
+    repaint();
 }
 
 void MainWindow::repaintButtons() {
@@ -218,17 +234,40 @@ void MainWindow::paintEvent(QPaintEvent* event) {
     }
 }
 
-
 void MainWindow::drawLine() {
-
+    painter.begin(&img);
+    painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+    if (current != next) {
+        changed = true;
+        painter.drawLine(current, next);
+    }
+    painter.end();
+    label->setPixmap(img);
+    repaint();
 }
 
 void MainWindow::drawEllipse() {
-
+    painter.begin(&img);
+    painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+    if (current != next) {
+        changed = true;
+        painter.drawEllipse(QRectF(current, next));
+    }
+    painter.end();
+    label->setPixmap(img);
+    repaint();
 }
 
 void MainWindow::drawRectangle() {
-
+    painter.begin(&img);
+    painter.setPen(QPen(color, widthOfPen, Qt::SolidLine));
+    if (current != next) {
+        changed = true;
+        painter.drawRect(QRectF(current, next));
+    }
+    painter.end();
+    label->setPixmap(img);
+    repaint();
 }
 
 void MainWindow::newFile() {
@@ -239,21 +278,71 @@ void MainWindow::newFile() {
 }
 
 void MainWindow::open() {
+    if (changed) {
+        save();
+    }
 
+    const QString fileName = QFileDialog::getOpenFileName(
+        this,
+        tr("Открыть файл"),
+        QDir::currentPath(),
+        tr("Изображения (*.png *.bmp *.jpg);;Все файлы (*.*)"));
+
+    if (!fileName.isEmpty()) {
+        QFileInfo fi(fileName);
+        QDir::setCurrent(fi.canonicalPath());
+        loadFile(fileName);
+    }
 }
 
 bool MainWindow::save() {
+    bool b = false;
+    const QString initialPath = QDir::currentPath() + "/untitled.png";
 
+    const QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Сохранить как"),
+        initialPath,
+        tr("Изображения PNG (*.png);;Изображения BMP (*.bmp);;") +
+            tr("Изображения JPG (*.jpg);;Все файлы (*.*)"));
+
+    if (!fileName.isEmpty()) {
+        QFileInfo fi(fileName);
+        b = img.save(fileName, fi.completeSuffix().toStdString().c_str());
+        if (b) {
+            changed = false;
+        }
+        else {
+            QMessageBox::critical(this, tr("Ошибка"), tr("Не могу сохранить файл"));
+        }
+    }
+    return b;
 }
 
 void MainWindow::loadFile(const QString& fileName) {
-
+    if (!fileName.isEmpty()) {
+        bool b = img.load(fileName);
+        if (b) {
+            label->setPixmap(img);
+            changed = false;
+        }
+        else {
+            QMessageBox::critical(this, tr("Ошибка"), tr("Не могу открыть файл"));
+        }
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-
+    if (changed) {
+        bool b = save();
+        if (b) {
+            event->accept();
+        }
+        else {
+            event->ignore();
+        }
+    }
 }
-
 
 void MainWindow::createActions() {
     QMenu* fileMenu = menuBar()->addMenu(tr("&Файл"));
